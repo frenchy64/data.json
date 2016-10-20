@@ -17,6 +17,8 @@
 
 ;;; JSON READER
 
+(defonce value-fn-sentinel (Object.))
+
 (def ^{:dynamic true :private true} *bigdec*)
 (def ^{:dynamic true :private true} *key-fn*)
 (def ^{:dynamic true :private true} *value-fn*)
@@ -98,7 +100,8 @@
                 (recur nil
                        (let [out-key (*key-fn* key)
                              out-value (*value-fn* out-key element)]
-                         (if (= *value-fn* out-value)
+                         (if (or (= *value-fn* out-value)
+                                 (identical? value-fn-sentinel out-value))
                            result
                            (assoc! result out-key out-value)))))))))))
 
@@ -256,9 +259,9 @@
         the output. For each JSON property, value-fn is called with
         two arguments: the property name (transformed by key-fn) and
         the value. The return value of value-fn will replace the value
-        in the output. If value-fn returns itself, the property will
-        be omitted from the output. The default value-fn returns the
-        value unchanged. This option does not apply to non-map
+        in the output. If value-fn returns itself or `value-fn-sentinel`, 
+        the property will be omitted from the output. The default value-fn 
+        returns the value unchanged. This option does not apply to non-map
         collections."
   [reader & options]
   (let [{:keys [eof-error? eof-value bigdec key-fn value-fn]
@@ -326,7 +329,8 @@
             nxt (next x)]
         (when-not (string? out-key)
           (throw (Exception. "JSON object keys must be strings")))
-        (if-not (= *value-fn* out-value)
+        (if-not (or (= *value-fn* out-value)
+                    (identical? value-fn-sentinel out-value))
           (do
             (when have-printed-kv
               (.print out \,))
