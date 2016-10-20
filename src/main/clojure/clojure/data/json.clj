@@ -8,7 +8,9 @@
 
 (ns ^{:author "Stuart Sierra"
       :doc "JavaScript Object Notation (JSON) parser/generator.
-  See http://www.json.org/"}
+  See http://www.json.org/"
+      :lang :core.typed
+      :core.typed {:features #{:runtime-infer}}}
   clojure.data.json
   (:refer-clojure :exclude (read))
   (:require [clojure.pprint :as pprint])
