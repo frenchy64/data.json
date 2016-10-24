@@ -13,7 +13,8 @@
       :core.typed {:features #{:runtime-infer}}}
   clojure.data.json
   (:refer-clojure :exclude (read))
-  (:require [clojure.pprint :as pprint])
+  (:require [clojure.pprint :as pprint]
+            [clojure.core.typed :as t])
   (:import (java.io PrintWriter PushbackReader StringWriter
                     Writer StringReader EOFException)))
 
