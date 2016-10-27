@@ -14,7 +14,8 @@
   clojure.data.json
   (:refer-clojure :exclude (read))
   (:require [clojure.pprint :as pprint]
-            [clojure.core.typed :as t])
+            [clojure.core.typed :as t]
+            [clojure.spec :as s])
   (:import (java.io PrintWriter PushbackReader StringWriter
                     Writer StringReader EOFException)))
 
