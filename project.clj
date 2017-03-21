@@ -4,8 +4,9 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
-  :dependencies [[org.clojure/clojure "1.9.0-alpha13"]
-                 [org.clojure/core.typed "0.3.29-SNAPSHOT"]
+  :monkeypatch-clojure-test false
+  :dependencies [[org.clojure/clojure "1.9.0-alpha15"]
+                 [org.clojure/core.typed "0.3.33-SNAPSHOT"]
                  ]
   :injections [(require 'clojure.core.typed)
                (clojure.core.typed/install
