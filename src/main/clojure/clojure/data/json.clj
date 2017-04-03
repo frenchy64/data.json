@@ -10,7 +10,8 @@
       :doc "JavaScript Object Notation (JSON) parser/generator.
   See http://www.json.org/"
       :lang :core.typed
-      :core.typed {:features #{:runtime-infer}}}
+      ;:core.typed {:features #{:runtime-infer}}
+      }
   clojure.data.json
   (:refer-clojure :exclude (read))
   (:require [clojure.pprint :as pprint]
@@ -26,52 +27,41 @@
   -read
   [PushbackReader
    Boolean
-   (t/U nil ':clojure.data.json-test/eof)
+   t/Any
    :->
    t/Any])
-(t/ann JSONWriter (t/Map t/Nothing t/Nothing))
 (t/ann
   codepoint-clause
-  [(t/Coll t/Any)
+  [(t/I t/Sequential (t/Coll t/Any))
    :->
-   '[(t/U t/Int (t/Coll t/Int)) (t/U (t/Coll t/Any) Character)]])
-(t/ann default-value-fn [(t/U t/Str t/Int ':a ':b) t/Any :-> t/Any])
+   '[(t/U t/Int (t/Coll t/Int)) t/Any]])
+(t/ann default-value-fn [t/Any t/Any :-> t/Any])
 (t/ann
   default-write-key-fn
-  [(t/U nil t/Str ':c t/Int ':d ':double ':a ':e ':f ':b) :-> t/Str])
+  [t/Any :-> t/Str])
 (t/ann
   pprint
-  (t/IFn
-    [t/Str ':escape-unicode false :-> nil]
-    [(t/Vec t/Any) :-> nil]))
-(t/ann pprint-array [(t/Vec t/Any) :-> nil])
+  [t/Any 
+   & :optional {:escape-unicode Boolean
+                :escape-js-separators Boolean
+                :escape-slash Boolean
+                :key-fn [t/Any :-> t/Any]}
+   :-> t/Any])
+(t/ann ^:no-check pprint-array [(t/U nil (t/Seqable t/Any)) :-> nil]) ;; uses pprint internals
 (t/ann pprint-dispatch [t/Any :-> nil])
-(t/ann pprint-generic [(t/U t/Str Boolean t/Num) :-> nil])
-(t/ann pprint-object [(t/Map t/Str t/Any) :-> nil])
+(t/ann pprint-generic [t/Any :-> nil])
+(t/ann ^:no-check pprint-object [java.util.Map :-> nil]) ;; uses pprint internals
 (t/ann
   read
-  (t/IFn
-    [StringReader
-     (t/U ':eof-error? ':key-fn)
-     (t/U [t/Str :-> (t/U ':number ':date)] false)
-     (t/U ':value-fn ':eof-value)
-     (t/U
-       [? ? :-> Object]
-       [':date (t/U t/Str t/Int) :-> (t/U Object t/Int java.sql.Date)]
-       ':clojure.data.json-test/eof
-       [(t/U ':number ':date)
-        (t/U t/Str t/Int)
-        :->
-        (t/U Object t/Int java.sql.Date)])
-     :->
-     t/Any]
-    [StringReader
-     (t/U ':bigdec ':key-fn)
-     (t/U Boolean [t/Str :-> (t/U ':a ':b)] [? :-> ':a] AnyFunction)
-     :->
-     (t/U a-b BigDecimal)]
-    [(t/U PushbackReader StringReader) :-> t/Any]))
-(t/ann read-array [PushbackReader :-> (t/Vec t/Any)])
+  [java.io.Reader
+   & :optional {:eof-error? Boolean
+                :eof-value  t/Any
+                :bigdec Boolean
+                :key-fn [t/Any :-> t/Any]
+                :value-fn [t/Any t/Any :-> t/Any]}
+   :->
+   t/Any])
+(t/ann ^:no-check read-array [PushbackReader :-> (t/Vec t/Any)]) ;; need transient support in core.typed
 (t/ann read-decimal [t/Str :-> (t/U Double BigDecimal)])
 (t/ann read-escaped-char [PushbackReader :-> Character])
 (t/ann read-hex-char [PushbackReader :-> Character])
@@ -79,57 +69,29 @@
 (t/ann
   read-number
   [PushbackReader :-> (t/U t/Num clojure.lang.BigInt BigDecimal)])
-(t/ann read-object [PushbackReader :-> (t/Map t/Str t/Any)])
+(t/ann ^:no-check read-object [PushbackReader :-> (t/Map t/Str t/Any)]) ;; need transient support in core.typed
 (t/ann read-quoted-string [PushbackReader :-> t/Str])
 (t/ann
-  read-str
-  (t/IFn
-    [t/Str :-> t/Any]
-    [t/Str
-     (t/U ':eof-error? ':key-fn)
-     (t/U
-       [t/Str :-> (t/U ':number ':date)]
-       false
-       [? :-> ':date]
-       AnyFunction)
-     (t/U ':value-fn ':eof-value)
-     (t/U
-       ':clojure.data.json-test/eof
-       [(t/U ':number ':date)
-        (t/U t/Str t/Int)
-        :->
-        (t/U Object t/Int java.sql.Date)]
-       AnyFunction)
-     :->
-     t/Any]
-    [t/Str
-     (t/U ':bigdec ':key-fn)
-     (t/U
-       Boolean
-       [t/Str :-> (t/U ':a ':b)]
-       [t/Str :-> ':a]
-       [? :-> ':a]
-       AnyFunction)
-     :->
-     (t/U a-b BigDecimal)]))
+  ^:no-check
+  read-str ;; core.typed can't check apply'ed kw args
+  [t/Str
+   & :optional {:eof-error? Boolean
+                :eof-value  t/Any
+                :bigdec Boolean
+                :key-fn [t/Any :-> t/Any]
+                :value-fn [t/Any t/Any :-> t/Any]}
+   :->
+   t/Any])
 (t/ann value-fn-sentinel Object)
 (t/ann
   write
-  (t/IFn
-    [t/Any StringWriter :-> nil]
-    [t/Any
-     StringWriter
-     (t/U ':escape-unicode ':value-fn ':escape-js-separators)
-     (t/U
-       [(t/U ':c ':e ':f) t/Num :-> Object]
-       [(t/U ':c ':d ':double ':a ':e ':f ':b)
-        (t/U nil t/Num)
-        :->
-        (t/U Object t/Str t/Int)]
-       Boolean
-       [(t/U ':c ':f) ? :-> ?])
-     :->
-     nil]))
+  [t/Any java.io.Writer 
+   & :optional {:escape-unicode Boolean
+                :escape-js-separators Boolean
+                :escape-slash Boolean
+                :key-fn [t/Any :-> t/Any]
+                :value-fn [t/Any t/Any :-> t/Any]}
+   :-> t/Any])
 (t/ann
   write-array
   [(t/U (t/Set t/Int) (t/Coll (t/U nil t/Int))) PrintWriter :-> nil])
@@ -137,41 +99,34 @@
   write-bignum
   [(t/U clojure.lang.BigInt BigDecimal) PrintWriter :-> nil])
 (t/ann write-double [Double PrintWriter :-> nil])
-(t/ann write-float [Float PrintWriter :-> ?])
-(t/ann write-generic [(Array t/Int) PrintWriter :-> nil])
+(t/ann write-float [Float PrintWriter :-> t/Any])
+(t/ann write-generic [Object PrintWriter :-> t/Any])
 (t/ann write-named [t/Sym PrintWriter :-> nil])
 (t/ann write-null [nil PrintWriter :-> nil])
 (t/ann
   write-object
-  [(t/Map (t/U nil t/Str t/Int) t/Int) PrintWriter :-> nil])
+  [(t/Map t/Any t/Any) PrintWriter :-> nil])
 (t/ann write-plain [(t/U t/Int Boolean) PrintWriter :-> nil])
-(t/ann write-ratio [clojure.lang.Ratio PrintWriter :-> nil])
+(t/ann write-ratio [clojure.lang.Ratio PrintWriter :-> t/Any])
 (t/ann
   write-str
-  (t/IFn
-    [t/Any :-> t/Str]
-    [t/Any
-     (t/U ':escape-unicode ':value-fn ':escape-js-separators)
-     (t/U
-       [(t/U ':c ':d ':a ':e ':b)
-        (t/U nil t/Num)
-        :->
-        (t/U Object t/Str t/Int)]
-       [? t/Int :-> ?]
-       [(t/U ':c ':d ':a ':e ':f ':b)
-        (t/U nil t/Num)
-        :->
-        (t/U Object t/Str t/Int)]
-       [(t/U ':c ':d ':double ':a ':e ':f ':b)
-        (t/U nil t/Num)
-        :->
-        (t/U Object t/Str t/Int)]
-       Boolean
-       AnyFunction)
-     :->
-     t/Str]))
+  [t/Any
+   & :optional {:escape-unicode Boolean
+                :escape-js-separators Boolean
+                :escape-slash Boolean
+                :key-fn [t/Any :-> t/Any]
+                :value-fn [t/Any t/Any :-> t/Any]}
+   :-> t/Str])
 (t/ann write-string [t/Str PrintWriter :-> nil])
 (t/ann clojure.pprint/pprint [t/Any :-> nil])
+(t/ann *bigdec* Boolean)
+(t/ann *key-fn* [t/Any -> t/Any])
+(t/ann *value-fn* [t/Any t/Any -> t/Any])
+(t/ann *escape-unicode* Boolean)
+(t/ann *escape-js-separators* Boolean)
+(t/ann *escape-slash* Boolean)
+(t/ann-protocol JSONWriter -write [t/Any t/Any :-> t/Any])
+
 ;; End: Generated by clojure.core.typed - DO NOT EDIT
 ;;; JSON READER
 
@@ -198,7 +153,12 @@
 
 (defn- codepoint-clause [[test result]]
   (cond (list? test)
-        [(map int test) result]
+        (let [_ (assert (seqable? test))]
+          [(map (t/fn [i]
+                  {:pre [(or (number? i)
+                             (char? i))]}
+                  (int i))
+                test) result])
         (= test :whitespace)
         ['(9 10 13 32) result]
         (= test :simple-ascii)
@@ -208,7 +168,7 @@
         (= test :js-separators)
         ['(16r2028 16r2029) result]
         :else
-        [(int test) result]))
+        [(int (t/cast (t/U Character t/Int) test)) result]))
 
 (defmacro ^:private codepoint-case [e & clauses]
   `(case ~e
@@ -308,15 +268,15 @@
 
 (defn- read-integer [^String string]
   (if (< (count string) 18)  ; definitely fits in a Long
-    (Long/valueOf string)
-    (or (try (Long/valueOf string)
+    (t/cast Long (Long/valueOf string))
+    (or (try (t/cast Long (Long/valueOf string))
              (catch NumberFormatException e nil))
         (bigint string))))
 
 (defn- read-decimal [^String string]
   (if *bigdec*
     (bigdec string)
-    (Double/valueOf string)))
+    (t/cast Double (Double/valueOf string))))
 
 (defn- read-number [^PushbackReader stream]
   (let [buffer (StringBuilder.)
@@ -444,22 +404,24 @@
 (def ^{:dynamic true :private true} *escape-js-separators*)
 (def ^{:dynamic true :private true} *escape-slash*)
 
+(t/tc-ignore
 (defprotocol JSONWriter
   (-write [object out]
     "Print object to PrintWriter out as JSON"))
+)
 
 (defn- write-string [^CharSequence s ^PrintWriter out]
   (let [sb (StringBuilder. (count s))]
     (.append sb \")
     (dotimes [^{::t/ann t/Int} i (count s)]
-      (let [cp (int (.charAt s i))]
+      (let [cp (int (t/cast Character (.charAt s (int i))))]
         (codepoint-case cp
           ;; Printable JSON escapes
           \" (.append sb "\\\"")
           \\ (.append sb "\\\\")
           \/ (.append sb (if *escape-slash* "\\/" "/"))
           ;; Simple ASCII characters
-          :simple-ascii (.append sb (.charAt s i))
+          :simple-ascii (.append sb (.charAt s (int i)))
           ;; JSON escapes
           \backspace (.append sb "\\b")
           \formfeed  (.append sb "\\f")
@@ -479,8 +441,8 @@
 
 (defn- write-object [m ^PrintWriter out] 
   (.print out \{)
-  (loop [^{::t/ann (t/U (t/Map (t/U nil t/Str t/Int) t/Int) (t/Coll '[(t/U ':c t/Int ':d ':e ':f ':b) (t/U nil t/Int)]))} x m, ^{::t/ann Boolean} have-printed-kv false]
-    (when (seq m)
+  (loop [^{::t/ann (t/NilableNonEmptySeq '[t/Any t/Any])} x (seq m), ^{::t/ann Boolean} have-printed-kv false]
+    (when (seq x)
       (let [[k v] (first x)
             out-key (*key-fn* k)
             out-value (*value-fn* k v)
@@ -542,13 +504,16 @@
   (write-string (name x) out))
 
 (defn- write-generic [x out]
-  (if (.isArray (class x))
-    (-write (seq x) out)
+  (if (some-> (t/ann-form (class x) (t/U nil Class)) .isArray)
+    (do
+      (assert (seqable? x))
+      (-write (seq x) out))
     (throw (Exception. (str "Don't know how to write JSON of " (class x))))))
 
 (defn- write-ratio [x out]
   (-write (double x) out))
 
+(t/tc-ignore
 ;; nil, true, false
 (extend nil                    JSONWriter {:-write write-null})
 (extend java.lang.Boolean      JSONWriter {:-write write-plain})
@@ -582,6 +547,7 @@
 
 ;; Maybe a Java array, otherwise fail
 (extend java.lang.Object       JSONWriter {:-write write-generic})
+)
 
 (defn write
   "Write JSON-formatted output to a java.io.Writer. Options are
@@ -641,8 +607,8 @@
   write."
   [x & options]
   (let [sw (StringWriter.)]
-    (apply write x sw options)
-    (.toString sw)))
+    (t/tc-ignore (apply write x sw options))
+    (t/cast String (.toString sw))))
 
 ;;; JSON PRETTY-PRINTER
 
@@ -656,8 +622,10 @@
    (for ^{::t/ann '[t/Str t/Any]} [^{::t/ann '[t/Str t/Any]} [k v] m] [(*key-fn* k) v])))
 
 (defn- pprint-generic [x]
-  (if (.isArray (class x))
-    (pprint-array (seq x))
+  (if (some-> (t/ann-form (class x) (t/U nil Class)) .isArray)
+    (do
+      (assert (seqable? x))
+      (pprint-array (seq x)))
     ;; pprint proxies Writer, so we can't just wrap it
     (print (with-out-str (-write x (PrintWriter. *out*))))))
 
@@ -679,8 +647,9 @@
     (binding [*escape-unicode* escape-unicode
               *escape-slash* escape-slash
               *key-fn* key-fn]
-      (pprint/with-pprint-dispatch pprint-dispatch
-        (pprint/pprint x)))))
+      (t/tc-ignore
+        (pprint/with-pprint-dispatch pprint-dispatch
+          (pprint/pprint x))))))
 
 (load "json_compat_0_1")
 
